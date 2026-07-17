@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OMS - アカウント作成</title>
+    <link rel="icon" type="image/png" href="/images/favicon.png">
+    <link rel="stylesheet" href="/chat/css/style.css">
+    
+    <script src="/js/chat.js" defer></script>
+    <style>
+/* 利用規約チェックボックスエリアの調整 */
+.terms-container {
+    display: flex;
+    align-items: center; /* 縦方向の中央揃え */
+    gap: 8px;
+    margin: 16px 0;
+    font-size: 14px;
+    user-select: none;
+    justify-content: flex-start;
+}
+
+/* 追加：labelの文字の位置をチェックボックスと同期させる */
+.terms-container label {
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+    margin: 0;
+    padding: 0;
+    cursor: pointer;
+}
+
+.terms-container input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    margin: 0; /* ブラウザの余白リセット */
+    cursor: pointer;
+}
+
+.terms-container a {
+    color: var(--primary);
+    text-decoration: underline;
+}
+        /* ボタンが無効化されているときのスタイル */
+        button:disabled {
+            background-color: #cbd5e1 !important;
+            color: #94a3b8 !important;
+            cursor: not-allowed !important;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        /* モーダル全体の背景（画面全体を覆う） */
+.modal-overlay {
+    display: none; /* 最初は非表示 */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* 背景を半透明の黒に */
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+/* 真ん中に出る白い箱 */
+.modal-content {
+    background-color: #fff;
+    padding: 24px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px; /* 横幅の最大値 */
+    max-height: 80vh; /* 縦幅の最大値（画面の8割） */
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+/* 規約文が入るスクロールエリア */
+.modal-body {
+    overflow-y: auto; /* 長文のときにスクロールさせる */
+    margin: 16px 0;
+    font-size: 14px;
+    line-height: 1.6;
+    text-align: left;
+}
+
+/* 閉じるボタン */
+.modal-close-btn {
+    padding: 8px 16px;
+    background-color: #333;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    align-self: center;
+}
+.modal-close-btn:hover {
+    background-color: #555;
+}
+
+/* モーダルを表示するためのクラス */
+.modal-overlay.is-open {
+    display: flex;
+}
+
+    </style>
+</head>
+<body>
+    <div class="container account-container">
+        <h1>CREATE ACCOUNT</h1>
+        
+        <form id="registerForm">
+            <div class="form-group">
+                <label for="username">ユーザー名 (英数字・ハイフンのみ)</label>
+                <input type="text" id="username" required placeholder="example-user">
+            </div>
+            <div class="form-group">
+                <label for="email">メールアドレス</label>
+                <input type="email" id="email" required placeholder="your@email.com">
+            </div>
+            <div class="form-group">
+                <label for="password">パスワード (英数字・ハイフンのみ)</label>
+                <input type="password" id="password" required placeholder="••••••••">
+            </div>
+
+            <div class="terms-container">
+                <input type="checkbox" id="termsCheck">
+                <label for="termsCheck"><a href="#" id="openRule" style="color: #0000ee !important; text-decoration: none;">利用規約</a>に同意する。</label>
+            </div>
+
+            <button type="submit" id="submitBtn" disabled>確認コードを送信</button>
+        </form>
+
+        <form id="verifyForm" style="display: none; margin-top: 20px;">
+            <p class="notice-info">メール宛に送信された6桁の認証コードを入力してください。</p>
+            <div class="form-group">
+                <label for="verifyCode">6桁の認証コード</label>
+                <input type="text" id="verifyCode" required maxlength="6" placeholder="123456" style="text-align: center; font-size: 20px; letter-spacing: 4px;">
+            </div>
+            <button type="submit">登録を完了する</button>
+        </form>
+
+        <div class="account-links">
+            <a href="./login.html" style="color: orange !important; text-decoration: none; font-weight: bold;">すでにアカウントをお持ちの方（ログイン）</a>
+        </div>
+    </div>
+
+<div id="ruleModal" class="modal-overlay">
+    <div class="modal-content">
+        <h3>利用規約</h3>
+        <div class="modal-body">
+            <h3>第1条</h3>
+            <p>このページを利用するにあたっての責任は利用者にあります。</p>
+            <h3>第2条</h3>
+            <p>当サービスは無料で提供されており、予告なく内容の変更やサービスの停止を行うことがあります。</p>
+            <h3>第3条</h3>
+            <p>当サービスを利用して発生したいかなる損害についても、当サービスは一切の責任を負いません。</p> 
+            <h3>第4条</h3>
+            <p>利用者は当サービスを不正な目的で使用してはなりません。これには、他人の権利を侵害する行為や、違法行為が含まれます。</p>
+            <h3>第5条</h3>
+            <p>利用者は当サービスを通じて送信される情報の内容について、全ての責任を負います。当サービスは、利用者が送信する情報の正確性や合法性について保証しません。</p>  
+        </div>
+        <button id="closeRule" class="modal-close-btn">閉じる</button>
+    </div>
+</div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const registerForm = document.getElementById('registerForm');
+            const verifyForm = document.getElementById('verifyForm');
+            const termsCheck = document.getElementById('termsCheck');
+            const submitBtn = document.getElementById('submitBtn');
+
+            const openRule = document.getElementById('openRule');
+            const closeRule = document.getElementById('closeRule');
+            const ruleModal = document.getElementById('ruleModal');
+
+            // 利用規約をクリックしたらモーダルを開く
+            openRule.addEventListener('click', (e) => {
+                e.preventDefault(); 
+                ruleModal.classList.add('is-open');
+            });
+
+            // 閉じるボタンをクリックしたらモーダルを閉じる
+            closeRule.addEventListener('click', () => {
+                ruleModal.classList.remove('is-open');
+            });
+
+            // 利用規約のチェック状態を監視し、ボタンの有効/無効をリアルタイムで切り替える
+            termsCheck.addEventListener('change', () => {
+                submitBtn.disabled = !termsCheck.checked;
+            });
+
+            // 1. 基本情報の送信（確認コードの要求）
+            registerForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                if (!termsCheck.checked) {
+                    alert('利用規約に同意する必要があります。');
+                    return;
+                }
+
+                const username = document.getElementById('username').value;
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+
+                submitBtn.disabled = true;
+                submitBtn.innerText = '送信中...';
+
+                // window.API.post 基盤を利用してリクエスト
+                if (window.API && typeof window.API.post === 'function') {
+                    const res = await window.API.post('/api/signup/verify', { username, email, password });
+
+                    if (res.success) {
+                        alert(res.message);
+                        registerForm.style.display = 'none'; 
+                        verifyForm.style.display = 'block';  
+                    } else {
+                        alert(res.message);
+                        submitBtn.disabled = false;
+                        submitBtn.innerText = '確認コードを送信';
+                    }
+                } else {
+                    alert('システムの読み込み待ちです。ページを再読み込みしてください。');
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = '確認コードを送信';
+                }
+            });
+
+            // 2. 6桁確認コードの送信とアカウント本登録
+            verifyForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const code = document.getElementById('verifyCode').value;
+
+                if (window.API && typeof window.API.post === 'function') {
+                    const res = await window.API.post('/api/signup/confirm', { code });
+
+                    if (res.success) {
+                        alert(res.message);
+                        window.location.href = './login.html'; 
+                    } else {
+                        alert(res.message);
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

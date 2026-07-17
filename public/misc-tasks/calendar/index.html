@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>スケジュールカレンダー | OMS</title>
+    <link rel="stylesheet" href="/chat/css/style.css">
+    <style>
+        .back-btn { display: inline-flex; align-items: center; justify-content: center; padding: 8px 16px; font-size: 14px; color: #475569; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; text-decoration: none; font-weight: bold; transition: background 0.2s; margin-bottom: 20px; cursor: pointer; }
+        .back-btn:hover { background: #e2e8f0; }
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .calendar-header button { padding: 6px 12px; background: #0284c7; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .calendar-table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; }
+        .calendar-table th, .calendar-table td { border: 1px solid #e2e8f0; width: 14.28%; text-align: center; padding: 10px; vertical-align: top; }
+        .calendar-table th { background: #f8fafc; color: #64748b; font-size: 13px; }
+        .calendar-table td { height: 80px; font-size: 14px; position: relative; }
+        .calendar-table td.today { background: #f0f9ff; font-weight: bold; }
+        .calendar-table td .day-num { display: block; margin-bottom: 5px; }
+        .event-item { font-size: 11px; background: #e0f2fe; color: #0369a1; padding: 2px 4px; border-radius: 4px; margin-top: 2px; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .event-form { margin-top: 20px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .event-form input, .event-form button { padding: 8px; font-size: 14px; border-radius: 6px; border: 1px solid #cbd5e1; margin-right: 5px; }
+        .event-form button { background: #0284c7; color: white; border: none; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="container" style="padding: 20px; box-sizing: border-box; max-width: 800px; margin: 0 auto;">
+        <a href="../" class="back-btn">← 戻る</a>
+
+        <h1>OMS スケジュールカレンダー</h1>
+        
+        <div style="background: #ffffff; padding: 20px; border-radius: 14px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-top: 16px;">
+            <div class="calendar-header">
+                <button id="prev-month">← 前月</button>
+                <h2 id="calendar-title" style="margin: 0; font-size: 18px; color: #1e293b;"></h2>
+                <button id="next-month">次月 →</button>
+            </div>
+            
+            <table class="calendar-table">
+                <thead>
+                    <tr>
+                        <th style="color: #ef4444;">日</th>
+                        <th>月</th>
+                        <th>火</th>
+                        <th>水</th>
+                        <th>木</th>
+                        <th>金</th>
+                        <th style="color: #3b82f6;">土</th>
+                    </tr>
+                </thead>
+                <tbody id="calendar-body"></tbody>
+            </table>
+
+            <div class="event-form">
+                <h3 style="margin: 0 0 10px 0; font-size: 14px; color: #334155;">📅 予定を追加する</h3>
+                <form id="add-event-form" style="display: flex; flex-wrap: wrap; gap: 10px;">
+                    <input type="date" id="event-date" required style="flex: 1; min-width: 150px;">
+                    <input type="text" id="event-title" placeholder="予定のタイトル" required style="flex: 2; min-width: 200px;">
+                    <button type="submit">追加</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            let currentYear = new Date().getFullYear();
+            let currentMonth = new Date().getMonth(); // 0-11
+            let events = [];
+
+            async function fetchEvents() {
+                try {
+                    const res = await fetch('/api/calendar/events');
+                    events = await res.json();
+                    renderCalendar();
+                } catch (e) {
+                    console.error('Failed to fetch events:', e);
+                }
+            }
+
+            function renderCalendar() {
+                const title = document.getElementById('calendar-title');
+                const body = document.getElementById('calendar-body');
+                if (!title || !body) return;
+
+                title.innerText = `${currentYear}年 ${currentMonth + 1}月`;
+                body.innerHTML = '';
+
+                const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+                const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+                const today = new Date();
+
+                let date = 1;
+                for (let i = 0; i < 6; i++) {
+                    let row = document.createElement('tr');
+                    let hasCells = false;
+
+                    for (let j = 0; j < 7; j++) {
+                        let cell = document.createElement('td');
+
+                        if (i === 0 && j < firstDay) {
+                            row.appendChild(cell);
+                        } else if (date > daysInMonth) {
+                            row.appendChild(cell);
+                        } else {
+                            hasCells = true;
+                            const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
+                            
+                            cell.innerHTML = `<span class="day-num">${date}</span>`;
+                            
+                            if (date === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear()) {
+                                cell.classList.add('today');
+                            }
+
+                            const dayEvents = events.filter(e => e.date === dateStr);
+                            dayEvents.forEach(e => {
+                                const div = document.createElement('div');
+                                div.className = 'event-item';
+                                div.innerText = e.title;
+                                cell.appendChild(div);
+                            });
+
+                            date++;
+                            row.appendChild(cell);
+                        }
+                    }
+                    if (hasCells) body.appendChild(row);
+                }
+            }
+
+            document.getElementById('prev-month')?.addEventListener('click', () => {
+                currentMonth--;
+                if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+                renderCalendar();
+            });
+
+            document.getElementById('next-month')?.addEventListener('click', () => {
+                currentMonth++;
+                if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+                renderCalendar();
+            });
+
+            document.getElementById('add-event-form')?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const dateInput = document.getElementById('event-date');
+                const titleInput = document.getElementById('event-title');
+                if (!dateInput || !titleInput) return;
+
+                const data = { date: dateInput.value, title: titleInput.value };
+
+                try {
+                    const res = await fetch('/api/calendar/events', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                    if (res.ok) {
+                        titleInput.value = '';
+                        await fetchEvents();
+                    }
+                } catch (err) {
+                    console.error('Failed to save event:', err);
+                }
+            });
+
+            fetchEvents();
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OMS - オンラインユーザー確認状況</title>
+    <link rel="icon" href="/images/favicon.png" type="image/x-icon">
+    <link rel="stylesheet" href="/chat/css/style.css">
+    <style>
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 16px;
+            font-size: 14px;
+            color: #475569;
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background 0.2s;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+        .back-btn:hover {
+            background: #e2e8f0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" style="padding: 20px; box-sizing: border-box; max-width: 600px; margin: 0 auto;">
+        <a href="/index.html" class="back-btn">← メインページへ戻る</a>
+
+        <h1>OMS オンライン状況確認</h1>
+        <p style="font-size: 13px; color: #64748b;">登録メンバーの接続状況と、現在開いているページの一覧です。</p>
+        
+        <div style="background: #ffffff; padding: 16px; border-radius: 14px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-top: 16px;">
+            <ul id="online-list" style="list-style: none; padding: 0; margin: 0;">
+                <li style="color: #64748b; font-size: 14px;">ユーザー一覧を読み込み中...</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="/js/online.js"></script>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OMS - バージョン履歴</title>
+    <link rel="icon" type="image/png" href="/images/favicon.png">
+    <link rel="stylesheet" href="/chat/css/style.css">
+    <style>
+        .history-list { display: flex; flex-direction: column; gap: 16px; margin-top: 20px; width: 100%; box-sizing: border-box; }
+        .history-card { padding: 20px; border: 1px solid var(--border-color); border-radius: 14px; background: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.02); box-sizing: border-box; width: 100%; text-align: left; }
+        .history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; }
+        .version-tag { background: var(--primary, #2563eb); color: white; padding: 2px 8px; font-size: 12px; border-radius: 6px; font-weight: bold; }
+        .version-date { font-size: 13px; color: var(--text-muted); }
+        .version-desc { font-size: 14px; color: var(--text-main); line-height: 1.5; white-space: pre-wrap; }
+        .back-link { display: inline-block; margin-top: 24px; color: var(--primary); text-decoration: none; font-size: 14px; }
+        .back-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container chat-container">
+        <h1>OMS VERSION HISTORY</h1>
+        <hr>
+        <a href="/" class="back-link">← メインページへ戻る</a>
+        <div id="historyArea" class="history-list">
+            <p style="text-align: center; color: var(--text-muted);">読み込み中...</p>
+        </div>
+
+
+
+        <div style="height: 4px; background-color: #cccccc; margin-top: 50px; border-radius: 2px;"></div>
+        <div style="text-align: center; font-size: 12px; color: #555555; margin-top: 20px;">
+            <p>©2026 Online Messages Service. All rights reserved.</p>
+        </div>
+    </div>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', async () => {
+            const area = document.getElementById('historyArea');
+            try {
+                const res = await fetch('/version/version.json');
+                const data = await res.json();
+                
+                if (Array.isArray(data) && data.length > 0) {
+                    area.innerHTML = '';
+                    // 最新順（降順）で表示
+                    data.reverse().forEach(item => {
+                        const card = document.createElement('div');
+                        card.className = 'history-card';
+                        card.innerHTML = `
+                            <div class="history-header">
+                                <span class="version-tag">Ver ${item.version}</span>
+                                <span class="version-date">${item.date}</span>
+                            </div>
+                            <div class="version-desc">${item.description}</div>
+                        `;
+                        area.appendChild(card);
+                    });
+                } else {
+                    area.innerHTML = '<p style="text-align: center; color: var(--text-muted);">履歴がありません。</p>';
+                }
+            } catch (e) {
+                area.innerHTML = '<p style="text-align: center; color: #ef4444;">データの取得に失敗しました。</p>';
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>マイデータ</title>
+    <link rel="icon" type="image/png" href="/images/favicon.png">
+    <link rel="stylesheet" href="/chat/css/style.css">
+    
+    <script src="/js/chat.js" defer></script>
+</head>
+<body>
+    <div class="container">
+        <h2>MY PROFILE</h2>
+        <div id="content" class="notice">読み込み中...</div>
+        
+        <hr>
+        
+        <div id="settingsArea" style="display:none;">
+            <h3>設定の変更</h3>
+            <form id="profileForm">
+                <label>表示名</label>
+                <input type="text" id="displayName" required>
+                <button type="submit">表示名を保存</button>
+            </form>
+            
+            <hr>
+            
+            <form id="iconForm">
+                <label>アイコン画像</label>
+                <input type="file" id="iconFile" accept="image/*" required>
+                <button type="submit">アップロード</button>
+            </form>
+        </div>
+
+        <br>
+        <button id="logoutBtn" class="btn-secondary" style="display:none; width:100%;">ログアウト</button>
+        <div class="back-link"><a href="/">← トップへ戻る</a></div>
+    </div>
+
+    <script>
+        async function checkLogin() {
+            if (!window.API || typeof window.API.get !== 'function') {
+                setTimeout(checkLogin, 100);
+                return;
+            }
+
+            const result = await window.API.get('/api/me');
+            const contentDiv = document.getElementById('content');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const settingsArea = document.getElementById('settingsArea');
+
+            if (result.success) {
+                let iconHTML = '';
+                if (result.user.icon) {
+                    iconHTML = `<img src="${result.user.icon}?t=${Date.now()}" class="icon-img">`;
+                } else {
+                    const firstChar = result.user.username.charAt(0).toUpperCase();
+                    iconHTML = `<div class="icon-circle">${firstChar}</div>`;
+                }
+
+                contentDiv.classList.remove('notice');
+                contentDiv.innerHTML = `
+                    <div class="mydata-avatar">${iconHTML}</div>
+                    <div class="info-list">
+                        <p>ユーザー名: <strong>@${result.user.username}</strong></p>
+                        <p>表示名: <strong>${result.user.displayName}</strong></p>
+                        <p>メールアドレス: ${result.user.email}</p>
+                    </div>
+                `;
+                
+                document.getElementById('displayName').value = result.user.displayName;
+                logoutBtn.style.display = 'block';
+                settingsArea.style.display = 'block';
+            } else {
+                contentDiv.innerHTML = `<p style="color:#ef4444;">ログインしていません。<br><br><a href="/chat/account/login.html" style="color:var(--accent);">ログイン画面へ</a></p>`;
+            }
+        }
+
+        document.getElementById('profileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const displayName = document.getElementById('displayName').value;
+
+            if (window.API && typeof window.API.post === 'function') {
+                const res = await window.API.post('/api/user/update', { displayName });
+                alert(res.message);
+                if (res.success) checkLogin();
+            }
+        });
+
+        document.getElementById('iconForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById('iconFile');
+            if (fileInput.files.length === 0) return;
+
+            const formData = new FormData();
+            formData.append('icon', fileInput.files[0]);
+
+            try {
+                // login.js 内の /api/user/icon エンドポイントを安全に呼び出し
+                const response = await fetch('/api/user/icon', {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'include'
+                });
+                const res = await response.json();
+                if (res.success) {
+                    alert('アイコンを変更しました！');
+                    checkLogin();
+                } else {
+                    alert(res.message || 'アップロードに失敗しました!');
+                }
+            } catch (error) {
+                alert('通信エラーが発生しました!');
+            }
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            if (window.API && typeof window.API.post === 'function') {
+                const result = await window.API.post('/api/logout');
+                if (result.success) {
+                    alert('ログアウトしました!;');
+                    location.href = '/index.html';
+                }
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            checkLogin();
+        });
+    </script>
+</body>
+</html>

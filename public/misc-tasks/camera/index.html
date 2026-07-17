@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="./camera.png">
+    <title>OMS - 無音カメラ</title>
+    <style>
+        :root {
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-main: #333333;
+            --text-muted: #666666;
+            --accent-color: #007aff;
+            --accent-hover: #0056b3;
+            --border-radius: 16px;
+            --border-color: #e5e7eb;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* 戻るボタン */
+        .btn-back {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 30px;
+            color: var(--text-main);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+            z-index: 10;
+        }
+
+        .btn-back:hover {
+            border-color: var(--accent-color);
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .camera-container {
+            background: var(--card-bg);
+            padding: 24px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            text-align: center;
+            max-width: 480px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .video-wrapper {
+            width: 100%;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #000000;
+            aspect-ratio: 4 / 3;
+            position: relative;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .error-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ffffff;
+            font-size: 14px;
+            padding: 0 20px;
+            display: none;
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+        }
+
+        .btn-shutter {
+            background: var(--accent-color);
+            color: #ffffff;
+            border: none;
+            padding: 14px 28px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.2);
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .btn-shutter:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-shutter:active {
+            transform: scale(0.98);
+        }
+
+        .btn-switch {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 30px;
+            padding: 10px 16px;
+            font-size: 14px;
+            color: var(--text-main);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .btn-switch:hover {
+            border-color: var(--accent-color);
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.1);
+        }
+
+        canvas {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <a href="../" class="btn-back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        戻る
+    </a>
+
+    <div class="camera-container">
+        <div class="video-wrapper">
+            <video id="video" autoplay playsinline></video>
+            <div id="errorMessage" class="error-message">カメラの起動に失敗しました。権限を許可してください。</div>
+        </div>
+
+        <div class="controls">
+            <button id="shutterBtn" class="btn-shutter">撮影する</button>
+            <button id="switchBtn" class="btn-switch">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                カメラ切り替え
+            </button>
+        </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const shutterBtn = document.getElementById('shutterBtn');
+        const switchBtn = document.getElementById('switchBtn');
+        const errorMessage = document.getElementById('errorMessage');
+
+        let currentFacingMode = 'environment'; // 初期状態は背面カメラ
+
+        // カメラ映像の開始
+        async function initCamera(facingMode) {
+            if (video.srcObject) {
+                // 既存のストリームを停止
+                video.srcObject.getTracks().forEach(track => track.stop());
+            }
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: facingMode }, // 指定されたカメラ
+                    audio: false // 音声は無効
+                });
+                video.srcObject = stream;
+            } catch (err) {
+                console.error("Camera Init Error: ", err);
+                errorMessage.style.display = 'block';
+                shutterBtn.disabled = true;
+                shutterBtn.style.opacity = '0.5';
+                switchBtn.disabled = true;
+                switchBtn.style.opacity = '0.5';
+            }
+        }
+
+        // カメラ切り替え処理
+        switchBtn.addEventListener('click', () => {
+            currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+            initCamera(currentFacingMode);
+        });
+
+        // シャッター処理
+        shutterBtn.addEventListener('click', () => {
+            if (!video.srcObject) return;
+
+            const ctx = canvas.getContext('2d');
+            // ビデオの解像度に合わせてCanvasサイズを設定
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            // インカメラの場合は左右反転して描画
+            if (currentFacingMode === 'user') {
+                ctx.translate(canvas.width, 0);
+                ctx.scale(-1, 1);
+            }
+
+            // Canvasに現在のビデオフレームを描画
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // インカメラの反転状態を元に戻す
+            if (currentFacingMode === 'user') {
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+            }
+
+            // データURL（Base64形式の画像データ）に変換して自動ダウンロード
+            try {
+                const dataUrl = canvas.toDataURL('image/jpeg');
+                const link = document.createElement('a');
+                link.href = dataUrl;
+                
+                // ファイル名生成 (OMS_YYYYMMDD_HHMMSS.jpg)
+                const now = new Date();
+                const timestamp = now.getFullYear() +
+                    String(now.getMonth() + 1).padStart(2, '0') +
+                    String(now.getDate()).padStart(2, '0') + '_' +
+                    String(now.getHours()).padStart(2, '0') +
+                    String(now.getMinutes()).padStart(2, '0') +
+                    String(now.getSeconds()).padStart(2, '0');
+                
+                link.download = `OMS_${timestamp}.jpg`;
+                link.click();
+            } catch (e) {
+                console.error("Capture Error: ", e);
+                alert("画像の保存に失敗しました。");
+            }
+        });
+
+        // ページ読み込み時にカメラを起動
+        window.addEventListener('DOMContentLoaded', () => initCamera(currentFacingMode));
+    </script>
+</body>
+</html>

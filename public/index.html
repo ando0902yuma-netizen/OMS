@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OMS - メインページ</title>
+    <link rel="icon" type="image/png" href="/images/favicon.png">
+    <link rel="stylesheet" href="/chat/css/style.css">
+    <style>
+        /* 管理者バッジ */
+        .admin-badge { background: #eab308; color: white; padding: 2px 6px; font-size: 10px; border-radius: 4px; margin-left: 4px; font-weight: bold; }
+
+        /* お知らせ・メインレイアウト */
+        .info-list { margin-bottom: 24px; line-height: 1.6; }
+        .menu-grid { display: flex; flex-direction: column; gap: 16px; margin-top: 20px; width: 100%; box-sizing: border-box; }
+
+        /* リンクカード */
+        .menu-card { display: flex; align-items: center; gap: 16px; padding: 20px; border: 1px solid var(--border-color); border-radius: 14px; background: #ffffff; text-decoration: none; color: var(--text-main); transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.02); box-sizing: border-box; width: 100%; }
+        .menu-card:hover { border-color: var(--primary); box-shadow: 0 4px 12px var(--primary-glow); transform: translateY(-2px); }
+        .menu-icon { width: 48px; height: 48px; min-width: 48px; display: flex; align-items: center; justify-content: center; background: var(--bg-other); border-radius: 12px; font-size: 24px; user-select: none; flex-shrink: 0; }
+        .menu-info { flex: 1; text-align: left; display: flex; flex-direction: column; gap: 4px; }
+        .menu-title { font-weight: bold; font-size: 16px; color: var(--text-main); }
+        .menu-desc { font-size: 13px; color: var(--text-muted); line-height: 1.4; }
+
+        /* 管理者用カードの特別カラー（オプション: 通常カードと同等にする場合はスタイル削除可） */
+        .menu-card.admin-card { border-left: 4px solid #eab308; }
+
+        /* フォローミー（SNSリンク） */
+        .sns-link { display: inline-flex; align-items: center; justify-content: center; width: 50px; height: 50px; border-radius: 50%; transition: transform 0.2s, opacity 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .sns-link:hover { transform: translateY(-3px); opacity: 0.9; }
+        .sns-icon-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+    </style>
+</head>
+<body>
+
+    <div class="container chat-container">
+        <h1>OMS MAIN SERVICE<br>From Sukura</h1>
+        
+        <nav>
+            <span id="userInfo">確認中...</span>
+            <a href="/account/login.html" id="linkLogin">ログイン</a>
+            <a href="/account/create.html" id="linkRegister">アカウント作成</a>
+            <a href="/account/mydata.html" id="linkMydata" style="display:none;">マイデータ</a>
+
+<div>
+  <style>
+    /* シェアを起こすトリガーボタン */
+    .trigger-share-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .trigger-share-btn:hover {
+      background-color: #0056b3;
+    }
+
+    /* 背景のオーバーレイ */
+    .share-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .share-overlay.is-active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* ポップアップ本体 */
+    .share-modal {
+      font-family: sans-serif;
+      width: 90%;
+      max-width: 360px;
+      padding: 24px;
+      border-radius: 16px;
+      background: #ffffff;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+      text-align: center;
+      position: relative;
+      transform: scale(0.9);
+      transition: transform 0.3s ease;
+    }
+    .share-overlay.is-active .share-modal {
+      transform: scale(1);
+    }
+
+    /* 閉じるボタン */
+    .share-close {
+      position: absolute;
+      top: 12px;
+      right: 16px;
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: #aaa;
+    }
+    .share-close:hover {
+      color: #333;
+    }
+
+    .share-title {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 20px;
+      color: #c06565;
+    }
+    .qr-wrapper {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .qr-wrapper img {
+      padding: 8px;
+      border: 1px solid #eee;
+      border-radius: 8px;
+    }
+    .share-buttons {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .share-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 12px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: opacity 0.2s;
+    }
+    .share-btn:hover {
+      opacity: 0.8;
+    }
+    .btn-x { background-color: #000000; }
+    .btn-line { background-color: #06C755; }
+    .btn-more { background-color: #6c757d; }
+    .btn-icon {
+      font-size: 18px;
+      margin-bottom: 4px;
+    }
+  </style>
+
+  <button id="open-share-btn" class="trigger-share-btn">
+    <span>🔗</span> このページを共有
+  </button>
+
+  <div id="share-overlay" class="share-overlay">
+    <div class="share-modal">
+      <button id="close-share-btn" class="share-close">&times;</button>
+      <div class="share-title">リンクを共有する</div>
+      
+      <div class="qr-wrapper">
+        <div id="qrcode"></div>
+      </div>
+
+      <div class="share-buttons">
+        <a id="share-x" class="share-btn btn-x" target="_blank" rel="noopener noreferrer">
+            <img src="/images/source/X.png" alt="X" style="width: 24px; height: 24px;" class="btn-icon">
+          <span style="color: #656565;">X</span>
+        </a>
+        <a id="share-line" class="share-btn btn-line" target="_blank" rel="noopener noreferrer">
+            <img src="/images/source/LINE.png" alt="LINE" style="width: 24px; height: 24px;" class="btn-icon">
+          <span style="color: #656565;">LINE</span>
+        </a>
+        <button id="share-more" class="share-btn btn-more">
+          <span class="btn-icon">🔗</span>
+          <span>その他</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  
+  <script>
+    (function() {
+      const shareUrl = window.location.href;
+      const shareTitle = document.title || "マイリンク";
+      
+      const openBtn = document.getElementById('open-share-btn');
+      const closeBtn = document.getElementById('close-share-btn');
+      const overlay = document.getElementById('share-overlay');
+      let qrGenerated = false;
+
+      // ポップアップを開く
+      openBtn.addEventListener('click', () => {
+        overlay.classList.add('is-active');
+        
+        // 初回オープン時のみQRコードを生成
+        if (!qrGenerated) {
+          const qrContainer = document.getElementById('qrcode');
+          if (qrContainer) {
+            new QRCode(qrContainer, {
+              text: shareUrl,
+              width: 128,
+              height: 128,
+              colorDark: "#000000",
+              colorLight: "#ffffff",
+              correctLevel: QRCode.CorrectLevel.H
+            });
+            qrGenerated = true;
+          }
+        }
+      });
+
+      // ポップアップを閉じる（閉じるボタン or 背景クリック）
+      const closeModal = () => overlay.classList.remove('is-active');
+      closeBtn.addEventListener('click', closeModal);
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) closeModal();
+      });
+
+      // SNSリンク設定
+      document.getElementById('share-x').href = `https://x.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareTitle)}`;
+      document.getElementById('share-line').href = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(shareUrl)}`;
+
+      // その他ボタン
+      const moreBtn = document.getElementById('share-more');
+      moreBtn.addEventListener('click', async () => {
+        if (navigator.share) {
+          try {
+            await navigator.share({ title: shareTitle, url: shareUrl });
+          } catch (err) {
+            if (err.name !== 'AbortError') console.error(err);
+          }
+        } else {
+          try {
+            await navigator.clipboard.writeText(shareUrl);
+            alert('URLをクリップボードにコピーしました!');
+          } catch (err) {
+            console.error('コピー失敗:', err);
+          }
+        }
+      });
+    })();
+  </script>
+</div>
+
+        </nav>
+
+        <hr>
+
+        <div id="mainArea" style="display:none;">
+            <a href="/version/index.html" style="text-decoration: none; color: inherit;">
+                <div class="info-list">
+                    <p id="latestNotice"><strong>お知らせ:</strong> 情報を読み込み中...</p>
+                </div>
+            </a>
+
+            <div class="menu-grid" id="menuGrid">
+                <a href="/chat/index.html" class="menu-card">
+                    <div class="menu-icon">
+                        <img src="/images/menu-icon/chat.png" alt="チャットアイコン" style="width: 32px; height: 32px; object-fit: contain;">
+                    </div>
+                    <div class="menu-info">
+                        <div class="menu-title">チャットルーム</div>
+                        <div class="menu-desc">みんなとリアルタイムでテキストや画像を使って会話が楽しめます。</div>
+                    </div>
+                </a>
+
+                <a href="/game/index.html" class="menu-card">
+                    <div class="menu-icon">
+                        <img src="/images/menu-icon/game.png" alt="ゲームアイコン" style="width: 32px; height: 32px; object-fit: contain;">
+                    </div>
+                    <div class="menu-info">
+                        <div class="menu-title">ゲームルーム</div>
+                        <div class="menu-desc">ミニゲームをプレイしたりすることができます。</div>
+                    </div>
+                </a>
+                
+                <a href="/misc-tasks/index.html" class="menu-card">
+                    <div class="menu-icon">
+                        <img src="/images/menu-icon/misc-tasks.png" alt="ゲームアイコン" style="width: 32px; height: 32px; object-fit: contain;">
+                    </div>
+                    <div class="menu-info">
+                        <div class="menu-title">その他Webアプリ</div>
+                        <div class="menu-desc">Webアプリケーション解いてよく使われるあって損しない機能を使用することができます。</div>
+                    </div>
+                </a>
+
+                <a href="/Action-plan/index.html" class="menu-card">
+                    <div class="menu-icon">
+                        <img src="/images/menu-icon/action-plan.png" alt="改善案アイコン" style="width: 32px; height: 32px; object-fit: contain;">
+                    </div>
+                    <div class="menu-info">
+                        <div class="menu-title">改善案ポスト</div>
+                        <div class="menu-desc">OMSシステムの改善提案や要望を投稿することができます。</div>
+                    </div>
+                </a>
+
+                <div id="adminMenuArea" style="display: none; flex-direction: column; gap: 16px; width: 100%;">
+                    <a href="/admin/online/index.html" class="menu-card admin-card">
+                        <div class="menu-icon">⚙️</div>
+                        <div class="menu-info">
+                            <div class="menu-title">オンライン者確認</div>
+                            <div class="menu-desc">オンラインの人を確認することができます。</div>
+                        </div>
+                    </a>
+                    <a href="/admin/action-plan/index.html" class="menu-card admin-card">
+                        <div class="menu-icon">📊</div>
+                        <div class="menu-info">
+                            <div class="menu-title">要望確認</div>
+                            <div class="menu-desc">要望の確認ができます。</div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div id="guestNotice" class="notice" style="display:none;">
+            <p>サービスを利用するにはログインしてください。</p>
+        </div>
+
+        <hr>
+
+        <div class="sns-footer" style="display: flex !important; flex-direction: column !important; align-items: center !important; text-align: center !important; padding: 30px 15px; background-color: #ffffff; width: 100%; box-sizing: border-box; margin: 10px auto 0 auto !important;">
+            <p style="text-align: center !important; margin: 0 0 16px 0 !important; width: 100%; display: block;">Follow Me</p>
+            <ul class="sns-flex-container" style="display: flex !important; justify-content: center !important; align-items: center !important; gap: 16px; flex-wrap: wrap; margin: 0 auto !important; padding: 0; list-style: none; width: 100%;">
+                <li><a href="https://x.com/yukkuri_cs_" class="sns-link" target="_blank" rel="noopener noreferrer"><img src="/images/follow/X.jpg" alt="X" class="sns-icon-img"></a></li>
+                <li><a href="https://line.me/ti/p/_73TpDaLss" class="sns-link" target="_blank" rel="noopener noreferrer"><img src="/images/follow/LINE.png" alt="LINE" class="sns-icon-img"></a></li>
+                <li><a href="https://www.instagram.com/sukura0902?igsh=MTdlOWhndmV5eWlhdQ==" class="sns-link" target="_blank" rel="noopener noreferrer"><img src="/images/follow/Instagram.webp" alt="Instagram" class="sns-icon-img"></a></li>
+                <li><a href="https://www.youtube.com/@yukkuriCS" class="sns-link" target="_blank" rel="noopener noreferrer"><img src="/images/follow/youTube.jpg" alt="YouTube" class="sns-icon-img"></a></li>
+            </ul>
+        </div>
+        <hr>
+        <div style="text-align: center; font-size: 12px; color: #555555; margin-top: 20px;">
+            <p>©2026 Online Messages Service. All rights reserved.</p>
+        </div>
+    </div>
+
+    <script>
+        function createIconHTML(url, name) { if (url) return `<img src="${url}?t=${Date.now()}" class="icon-img" style="margin:0;">`; return `<div class="icon-circle" style="margin:0;">${name?name.charAt(0).toUpperCase():'?'}</div>`; }
+
+        // 最新のお知らせを動的取得する関数
+        async function loadLatestNotice() {
+            try {
+                const res = await fetch('/version/version.json');
+                const data = await res.json();
+                if (Array.isArray(data) && data.length > 0) {
+                    const latest = data[data.length - 1]; // 配列の最後（最新）を取得
+                    document.getElementById('latestNotice').innerHTML = `<strong>お知らせ:</strong> [Ver ${latest.version}] ${latest.description} (${latest.date.split(' ')[0]})`;
+                }
+            } catch (e) {
+                document.getElementById('latestNotice').innerHTML = `<strong>お知らせ:</strong> OMSへようこそ！最新情報を取得できませんでした。`;
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            // お知らせの読み込みを実行
+            loadLatestNotice();
+
+            if (!window.API) { window.API = { get: async (url) => fetch(url, { credentials: 'include' }).then(r => r.json()).catch(() => ({ success: false })) }; }
+            const res = await window.API.get('/api/me');
+            if (res.success) {
+                document.getElementById('userInfo').innerHTML = `${createIconHTML(res.user.icon, res.user.username)} <span>${res.user.displayName}${res.user.role==='admin'?'<span class="admin-badge">ADMIN</span>':''}</span>`;
+                document.getElementById('linkLogin').style.display = 'none';
+                document.getElementById('linkRegister').style.display = 'none';
+                document.getElementById('linkMydata').style.display = 'inline';
+                document.getElementById('mainArea').style.display = 'block';
+
+                // 管理者の場合のみメニューを表示
+                if (res.user.role === 'admin') {
+                    const adminArea = document.getElementById('adminMenuArea');
+                    adminArea.style.display = 'flex';
+                }
+            } else {
+                document.getElementById('userInfo').innerText = "ゲストさん";
+                document.getElementById('guestNotice').style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

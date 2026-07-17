@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OMS - 数独</title>
+    <link rel="icon" type="image/png" href="/images/favicon.png">
+    <link rel="stylesheet" href="/chat/css/style.css">
+    <style>
+        .back-btn { display: inline-flex; align-items: center; justify-content: center; padding: 8px 16px; font-size: 14px; color: #475569; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; text-decoration: none; font-weight: bold; transition: background 0.2s; margin-bottom: 20px; cursor: pointer; }
+        .back-btn:hover { background: #e2e8f0; }
+
+        /* 数独レイアウト */
+        .sudoku-container { max-width: 450px; margin: 0 auto; background: #ffffff; padding: 20px; border-radius: 16px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
+        .sudoku-grid { display: grid; grid-template-columns: repeat(9, 1fr); gap: 0; width: 100%; aspect-ratio: 1; border: 3px solid #0f172a; background: #0f172a; margin-bottom: 20px; }
+        
+        .sudoku-cell { background: #ffffff; border: 1px solid #cbd5e1; display: flex; align-items: center; justify-content: center; position: relative; }
+        .sudoku-cell input { width: 100%; height: 100%; border: none; text-align: center; font-size: 20px; font-weight: bold; color: #1e293b; outline: none; background: transparent; padding: 0; }
+        .sudoku-cell input:focus { background: #e0f2fe; }
+        
+        /* 3x3ブロックの境界線を太くする */
+        .sudoku-cell:nth-child(3n) { border-right: 2px solid #0f172a; }
+        .sudoku-cell:nth-child(9n) { border-right: none; }
+        .sudoku-grid > div:nth-child(n+19):nth-child(-n+27),
+        .sudoku-grid > div:nth-child(n+46):nth-child(-n+54) { border-bottom: 2px solid #0f172a; }
+
+        /* 初期数字のスタイル */
+        .sudoku-cell.fixed input { color: #64748b; background: #f1f5f9; cursor: not-style; pointer-events: none; }
+        
+        /* 操作用ボタン */
+        .sudoku-controls { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+        .sudoku-btn { padding: 10px 16px; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; transition: background 0.2s; color: white; }
+        .sudoku-btn.primary { background: #0284c7; }
+        .sudoku-btn.primary:hover { background: #0369a1; }
+        .sudoku-btn.success { background: #10b981; }
+        .sudoku-btn.success:hover { background: #059669; }
+        .sudoku-btn.danger { background: #ef4444; }
+        .sudoku-btn.danger:hover { background: #dc2626; }
+        .sudoku-btn.secondary { background: #64748b; }
+        .sudoku-btn.secondary:hover { background: #475569; }
+    </style>
+</head>
+<body>
+    <div class="container" style="padding: 20px; box-sizing: border-box; max-width: 500px; margin: 0 auto;">
+        <a href="../" class="back-btn">← 戻る</a>
+
+        <h1 style="text-align: center; margin-bottom: 10px;">数独</h1>
+        
+        <div class="sudoku-container">
+            <div id="sudoku-board" class="sudoku-grid"></div>
+            
+            <div class="sudoku-controls">
+                <button class="sudoku-btn primary" id="btn-easy">簡単</button>
+                <button class="sudoku-btn primary" id="btn-hard">難しい</button>
+                <button class="sudoku-btn success" id="btn-check">判定する</button>
+                <button class="sudoku-btn danger" id="btn-reset">リセット</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const board = document.getElementById('sudoku-board');
+            let solution = []; // 解答用グリッド (9x9)
+            let currentGrid = []; // プレイヤー表示用グリッド (9x9)
+
+            // ボードの初期描画
+            function createBoard() {
+                board.innerHTML = '';
+                for (let r = 0; r < 9; r++) {
+                    for (let c = 0; c < 9; c++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'sudoku-cell';
+                        
+                        const input = document.createElement('input');
+                        input.type = 'text';
+                        input.maxLength = 1;
+                        input.dataset.row = r;
+                        input.dataset.col = c;
+                        
+                        // 入力制御（1-9の半角数字のみ）
+                        input.addEventListener('input', (e) => {
+                            const val = e.target.value;
+                            if (!/^[1-9]$/.test(val)) {
+                                e.target.value = '';
+                            }
+                        });
+
+                        cell.appendChild(input);
+                        board.appendChild(cell);
+                    }
+                }
+            }
+
+            // 簡単な数独生成用テンプレート
+            const baseSolution = [
+                [5, 3, 4, 6, 7, 8, 9, 1, 2],
+                [6, 7, 2, 1, 9, 5, 3, 4, 8],
+                [1, 9, 8, 3, 4, 2, 5, 6, 7],
+                [8, 5, 9, 7, 6, 1, 4, 2, 3],
+                [4, 2, 6, 8, 5, 3, 7, 9, 1],
+                [7, 1, 3, 9, 2, 4, 8, 5, 6],
+                [9, 6, 1, 5, 3, 7, 2, 8, 4],
+                [2, 8, 7, 4, 1, 9, 6, 3, 5],
+                [3, 4, 5, 2, 8, 6, 1, 7, 9]
+            ];
+
+            // シャッフルして新しい問題を生成
+            function generatePuzzle(difficulty) {
+                // シャッフル（行グループと列グループの入れ替え）
+                let nums = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+                // 数字の入れ替えマップ作成
+                for (let i = nums.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [nums[i], nums[j]] = [nums[j], nums[i]];
+                }
+
+                solution = baseSolution.map(row => row.map(val => nums[val - 1]));
+                currentGrid = solution.map(row => [...row]);
+
+                // 難易度に合わせて穴あけ (Easy: 35空き, Hard: 50空き)
+                const emptyCount = difficulty === 'easy' ? 35 : 50;
+                let cleared = 0;
+                while (cleared < emptyCount) {
+                    const r = Math.floor(Math.random() * 9);
+                    const c = Math.floor(Math.random() * 9);
+                    if (currentGrid[r][c] !== 0) {
+                        currentGrid[r][c] = 0;
+                        cleared++;
+                    }
+                }
+
+                renderGrid();
+            }
+
+            // 画面にグリッド状態を反映
+            function renderGrid() {
+                const inputs = board.querySelectorAll('input');
+                inputs.forEach(input => {
+                    const r = parseInt(input.dataset.row);
+                    const c = parseInt(input.dataset.col);
+                    const val = currentGrid[r][c];
+                    const cell = input.parentElement;
+
+                    if (val !== 0) {
+                        input.value = val;
+                        cell.classList.add('fixed');
+                    } else {
+                        input.value = '';
+                        cell.classList.remove('fixed');
+                    }
+                });
+            }
+
+            // 判定機能
+            function checkSolution() {
+                const inputs = board.querySelectorAll('input');
+                let isCorrect = true;
+                let isComplete = true;
+
+                inputs.forEach(input => {
+                    const r = parseInt(input.dataset.row);
+                    const c = parseInt(input.dataset.col);
+                    const val = parseInt(input.value);
+
+                    if (isNaN(val)) {
+                        isComplete = false;
+                        isCorrect = false;
+                    } else if (val !== solution[r][c]) {
+                        isCorrect = false;
+                    }
+                });
+
+                if (!isComplete) {
+                    alert('まだ埋まっていないマスがあります。');
+                } else if (isCorrect) {
+                    alert('🎉 おめでとうございます！正解です！');
+                } else {
+                    alert('❌ どこかに入力ミスがあります。もう一度見直してみましょう。');
+                }
+            }
+
+            // イベントリスナー
+            document.getElementById('btn-easy').addEventListener('click', () => generatePuzzle('easy'));
+            document.getElementById('btn-hard').addEventListener('click', () => generatePuzzle('hard'));
+            document.getElementById('btn-check').addEventListener('click', checkSolution);
+            document.getElementById('btn-reset').addEventListener('click', () => renderGrid());
+
+            // 起動処理
+            createBoard();
+            generatePuzzle('easy'); // 最初はEasyを自動生成して表示
+        })();
+    </script>
+</body>
+</html>

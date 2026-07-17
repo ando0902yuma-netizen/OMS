@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>改善案一覧 (管理者用) | OMS</title>
+    <link rel="icon" type="image/png" href="/images/favicon.png">
+    <link rel="stylesheet" href="/chat/css/style.css">
+    <style>
+        .back-btn { display: inline-flex; align-items: center; justify-content: center; padding: 8px 16px; font-size: 14px; color: #475569; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; text-decoration: none; font-weight: bold; transition: background 0.2s; margin-bottom: 20px; cursor: pointer; }
+        .back-btn:hover { background: #e2e8f0; }
+
+        .list-container { width: 100%; background: #ffffff; padding: 25px; border-radius: 16px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
+        
+        /* テーブルスタイル */
+        .plan-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .plan-table th, .plan-table td { border-bottom: 1px solid #e2e8f0; padding: 12px 16px; text-align: left; font-size: 14px; }
+        .plan-table th { background-color: #f8fafc; color: #475569; font-weight: bold; }
+        .plan-table tr:hover { background-color: #f8fafc; }
+        
+        .user-badge { background: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 6px; font-size: 12px; font-weight: bold; }
+        .time-text { color: #64748b; font-size: 12px; }
+        .request-text { color: #1e293b; line-height: 1.5; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <div class="container" style="padding: 20px; box-sizing: border-box; max-width: 900px; margin: 0 auto;">
+        <a href="/" class="back-btn">← 管理者トップに戻る</a>
+
+        <h1 style="margin-bottom: 5px;">改善案・要望の一覧表示</h1>
+        <p style="color: #64748b; font-size: 14px; margin-bottom: 25px;">ユーザーから届いた OMSシステム改善に関する要望やアイデアのまとめです。</p>
+
+        <div class="list-container">
+            <div id="loading" style="text-align: center; color: #64748b;">改善案データを読み込み中...</div>
+            <div id="no-data" style="text-align: center; color: #64748b; display: none;">現在届いている要望はありません。</div>
+            
+            <table class="plan-table" id="table-block" style="display: none;">
+                <thead>
+                    <tr>
+                        <th style="width: 20%;">アカウント名</th>
+                        <th style="width: 25%;">日時</th>
+                        <th style="width: 55%;">要望内容</th>
+                    </tr>
+                </thead>
+                <tbody id="plan-list-body">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        (async function() {
+            const tableBlock = document.getElementById('table-block');
+            const loading = document.getElementById('loading');
+            const noData = document.getElementById('no-data');
+            const body = document.getElementById('plan-list-body');
+
+            function escapeHtml(t) { 
+                return !t ? '' : t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); 
+            }
+
+            try {
+                const res = await fetch('/api/action-plan');
+                const data = await res.json();
+                loading.style.display = 'none';
+
+                if (data.success && data.plans && data.plans.length > 0) {
+                    tableBlock.style.display = 'table';
+                    
+                    // 最新の要望が上に来るようにリバースして表示
+                    data.plans.reverse().forEach(plan => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td><span class="user-badge">@${escapeHtml(plan.username)}</span></td>
+                            <td><span class="time-text">${escapeHtml(plan.time)}</span></td>
+                            <td><div class="request-text">${escapeHtml(plan.request)}</div></td>
+                        `;
+                        body.appendChild(tr);
+                    });
+                } else {
+                    noData.style.display = 'block';
+                }
+            } catch (e) {
+                console.error(e);
+                loading.style.display = 'none';
+                noData.textContent = 'データの読み込み中にエラーが発生しました。';
+                noData.style.display = 'block';
+            }
+        })();
+    </script>
+</body>
+</html>

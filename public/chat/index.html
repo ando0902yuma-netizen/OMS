@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OMS - チャットルーム</title>
+    <link rel="icon" type="image/png" href="/images/favicon.png">
+    <link rel="stylesheet" href="/chat/css/style.css">
+    <script src="/js/chat.js" defer></script>
+    <style>
+        .chat-form { flex-direction: column !important; align-items: stretch !important; gap: 10px; }
+        .chat-form-row { display: flex; gap: 10px; }
+        .chat-form textarea { flex: 1; resize: none; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px; font-size: 14px; outline: none; background: #fff; height: 50px; }
+        .chat-form textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-glow); }
+        .file-label { display: inline-flex; align-items: center; justify-content: center; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0 15px; cursor: pointer; font-size: 20px; transition: all 0.2s; }
+        .file-label:hover { background: #e2e8f0; }
+        .chat-img-preview { max-width: 100px; max-height: 100px; border-radius: 8px; margin-top: 5px; display: none; object-fit: cover; border: 1px solid var(--border-color); }
+        .posted-chat-img { max-width: 100%; max-height: 250px; border-radius: 10px; margin-top: 8px; display: block; object-fit: contain; background: #f8fafc; min-height: 100px; }
+        
+        .system-bubble { background: #f8fafc !important; border: 2px dashed #e2e8f0 !important; color: #0f172a !important; font-family: monospace; font-weight: bold; width: 100%; border-radius: 12px !important; box-sizing: border-box; }
+        .admin-badge { background: #eab308; color: white; padding: 2px 6px; font-size: 10px; border-radius: 4px; margin-left: 4px; font-weight: bold; }
+        
+        .msg-row { display: flex; flex-direction: column; width: 100%; box-sizing: border-box; }
+        .msg-row.me { align-items: flex-end; }
+        .msg-row.other { align-items: flex-start; }
+        .msg-header { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+        .msg-content-area { display: flex; flex-direction: column; max-width: 75%; }
+        .msg-row.me .msg-content-area { align-items: flex-end; }
+        .msg-row.other .msg-content-area { align-items: flex-start; }
+        
+        .msg-bubble { 
+            width: fit-content; 
+            max-width: 100%; 
+            text-align: left; 
+            box-sizing: border-box; 
+            user-select: none !important; 
+            -webkit-user-select: none !important; 
+            -webkit-touch-callout: none !important; 
+            cursor: pointer;
+        }
+        .msg-footer { display: flex; gap: 6px; font-size: 11px; color: var(--text-muted); margin-top: 4px; align-items: center; width: max-content; }
+        .read-status { color: #3b82f6; font-weight: bold; }
+
+        /* リプライデザイン */
+        .reply-preview-box {
+            display: flex;
+            flex-direction: column;
+            background: rgba(0, 0, 0, 0.05);
+            border-left: 3px solid #3b82f6;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #475569;
+            margin-bottom: 5px;
+            cursor: pointer;
+            width: 100%;
+            box-sizing: border-box;
+            transition: background 0.2s;
+        }
+        .reply-preview-box:hover { background: rgba(0, 0, 0, 0.09); }
+        .reply-user-row { display: flex; align-items: center; gap: 6px; font-weight: bold; color: #1e293b; margin-bottom: 2px; }
+        .reply-user-row .icon-img, .reply-user-row .icon-circle { width: 16px !important; height: 16px !important; font-size: 10px !important; }
+        .reply-text-row { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 22px; color: #64748b; }
+        
+        .active-reply-bar {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            background: #e0f2fe;
+            color: #0369a1;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+
+        .sns-link { display: inline-flex; align-items: center; justify-content: center; width: 50px; height: 50px; border-radius: 50%; transition: transform 0.2s, opacity 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .sns-link:hover { transform: translateY(-3px); opacity: 0.9; }
+        .sns-icon-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+
+        .longpress-menu {
+            position: fixed;
+            z-index: 10000;
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            display: none;
+            overflow: hidden;
+            min-width: 140px;
+        }
+        .longpress-menu button {
+            display: block;
+            width: 100%;
+            padding: 12px 16px;
+            text-align: left;
+            background: none;
+            color: var(--text-main);
+            border: none;
+            border-radius: 0;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .longpress-menu button:hover { background: #f1f5f9; transform: none; }
+        .longpress-menu button.menu-delete { color: #ef4444; }
+    </style>
+</head>
+<body>
+
+    <div class="container chat-container">
+        <h1>OMS CHAT ROOM<br>From Sukura</h1>
+        
+        <nav>
+            <span id="userInfo">確認中...</span>
+            <a href="/account/login.html" id="linkLogin">ログイン</a>
+            <a href="/account/create.html" id="linkRegister">アカウント作成</a>
+            <a href="/account/mydata.html" id="linkMydata" style="display:none;">マイデータ</a>
+        </nav>
+
+        <button onclick="location.href='/'" style="background: none; border: none; padding: 10px 15px 15px 0; margin: -10px 0 -15px 0; color: #0056b3; font-size: 16px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: flex-start; text-align: left; font-family: inherit;">← ホームに戻る</button>
+
+        <hr>
+
+        <div id="chatArea" style="display:none;">
+            <div id="msgContainer" class="msg-container"></div>
+            
+            <form id="chatForm" class="chat-form">
+                <div id="activeReplyBar" class="active-reply-bar">
+                    <span id="activeReplyLabel">対象メッセージにリプライ中...</span>
+                    <button type="button" id="cancelReplyBtn" style="background:none; border:none; color:#ef4444; font-weight:bold; cursor:pointer; padding: 0 4px;">✕ 解除</button>
+                </div>
+                
+                <div><img id="previewImg" class="chat-img-preview" alt="Preview"></div>
+                <div class="chat-form-row">
+                    <label class="file-label">
+                        <img src="/images/source/camera.png" alt="Attach" style="width:20px; height:20px;">
+                        <input type="file" id="msgImage" accept="image/*" style="display:none;">
+                    </label>
+                    <textarea id="msgText" placeholder="メッセージを入力..."></textarea>
+                    <button type="submit" style="padding: 0 24px;">送信</button>
+                </div>
+            </form>
+        </div>
+
+        <div id="guestNotice" class="notice" style="display:none;">
+            <p>チャットに参加するにはログインしてください。</p>
+        </div>
+
+        <div style="height: 4px; background-color: #cccccc; margin-top: 50px; border-radius: 2px;"></div>
+
+        <div class="sns-footer" style="display: flex !important; flex-direction: column !important; align-items: center !important; text-align: center !important; padding: 30px 15px; background-color: #ffffff; width: 100%; box-sizing: border-box; margin: 10px auto 0 auto !important;">
+            <p style="text-align: center !important; margin: 0 0 16px 0 !important; width: 100%; display: block;">Follow Me</p>
+            <ul class="sns-flex-container" style="display: flex !important; justify-content: center !important; align-items: center !important; gap: 16px; flex-wrap: wrap; margin: 0 auto !important; padding: 0; list-style: none; width: 100%;">
+                <li><a href="https://x.com/yukkuri_cs_" class="sns-link" target="_blank" rel="noopener noreferrer"><img src="/images/follow/X.jpg" alt="X" class="sns-icon-img"></a></li>
+                <li><a href="https://line.me/ti/p/_73TpDaLss" class="sns-link" target="_blank" rel="noopener noreferrer"><img src="/images/follow/LINE.png" alt="LINE" class="sns-icon-img"></a></li>
+                <li><a href="https://www.instagram.com/sukura0902?igsh=MTdlOWhndmV5eWlhdQ==" class="sns-link" target="_blank" rel="noopener noreferrer"><img src="/images/follow/Instagram.webp" alt="Instagram" class="sns-icon-img"></a></li>
+                <li><a href="https://www.youtube.com/@yukkuriCS" class="sns-link" target="_blank" rel="noopener noreferrer"><img src="/images/follow/youTube.jpg" alt="YouTube" class="sns-icon-img"></a></li>
+            </ul>
+        </div>
+
+        <div style="text-align: center; font-size: 12px; color: #555555; margin-top: 20px;">
+            <p>©2026 Online Messages Service. All rights reserved.</p>
+        </div>
+
+    </div>
+
+    <div id="longPressMenu" class="longpress-menu">
+        <button id="menuReplyBtn">💬 リプライ</button>
+        <button id="menuDeleteBtn" class="menu-delete">🗑️ 送信取り消し</button>
+    </div>
+
+    <script>
+        let currentUsername = null, currentUserRole = null, renderedMessages = new Map();
+        let activeMenuId = null; 
+        let replyTargetId = null;
+        let lastTapTime = 0;
+
+        function escapeHtml(t) { return !t ? '' : t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;").replace(/\n/g, "<br>"); }
+        function createIconHTML(url, name) { if (url) return `<img src="${url}?t=${Date.now()}" class="icon-img" style="margin:0;">`; return `<div class="icon-circle" style="margin:0;">${name?name.charAt(0).toUpperCase():'?'}</div>`; }
+
+        function getReadStatusText(readCount, isDm) {
+            if (readCount <= 0) return '';
+            return isDm ? '既読' : `既読 ${readCount}`;
+        }
+
+        function scrollToMessage(id) {
+            const target = document.getElementById(`msg-node-${id}`);
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                target.style.transition = 'background 0.5s';
+                target.style.background = '#e0f2fe';
+                setTimeout(() => target.style.background = 'none', 1000);
+            }
+        }
+
+        function setupDoubleClick(el, id, username, rawText, iconUrl, displayName) {
+            el.addEventListener('dblclick', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                showActionMenu(e.clientX, e.clientY, id, username, rawText, iconUrl, displayName);
+            });
+
+            el.addEventListener('touchend', (e) => {
+                const currentTime = new Date().getTime();
+                const tapLength = currentTime - lastTapTime;
+                if (tapLength < 300 && tapLength > 0) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const touch = e.changedTouches[0];
+                    showActionMenu(touch.clientX, touch.clientY, id, username, rawText, iconUrl, displayName);
+                }
+                lastTapTime = currentTime;
+            });
+        }
+
+        function showActionMenu(x, y, id, targetUsername, rawText, iconUrl, displayName) {
+            const menu = document.getElementById('longPressMenu');
+            if (!menu) return;
+
+            activeMenuId = id;
+            menu.style.left = `${x}px`;
+            menu.style.top = `${y}px`;
+            menu.style.display = 'block';
+
+            const menuRect = menu.getBoundingClientRect();
+            if (menuRect.right > window.innerWidth) { menu.style.left = `${window.innerWidth - menuRect.width - 10}px`; }
+            if (menuRect.bottom > window.innerHeight) { menu.style.top = `${window.innerHeight - menuRect.height - 10}px`; }
+
+            // 仕様変更：自分の投稿である、もしくは自分が管理者（admin）であれば削除ボタンを表示する
+            const canDelete = (targetUsername === currentUsername) || (currentUserRole === 'admin');
+            document.getElementById('menuDeleteBtn').style.display = canDelete ? 'block' : 'none';
+
+            const replyBtn = document.getElementById('menuReplyBtn');
+            const deleteBtn = document.getElementById('menuDeleteBtn');
+            
+            const closeMenu = () => { 
+                menu.style.display = 'none'; 
+                activeMenuId = null;
+                document.removeEventListener('click', closeOnOutsideClick);
+                document.removeEventListener('touchstart', closeOnOutsideClick);
+            };
+
+            const newReplyBtn = replyBtn.cloneNode(true);
+            newReplyBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                replyTargetId = id;
+                const bar = document.getElementById('activeReplyBar');
+                const label = document.getElementById('activeReplyLabel');
+                if (bar && label) {
+                    const shortText = rawText.length > 15 ? rawText.substring(0, 15) + '...' : rawText;
+                    label.innerText = `返信先 @${displayName || targetUsername}: 「${shortText}」`;
+                    bar.style.display = 'flex';
+                }
+                document.getElementById('msgText')?.focus();
+                closeMenu();
+            });
+            replyBtn.parentNode.replaceChild(newReplyBtn, replyBtn);
+
+            const newDeleteBtn = deleteBtn.cloneNode(true);
+            newDeleteBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                closeMenu();
+                if (confirm("このメッセージの送信を取り消しますか？")) {
+                    const r = await fetch(`/api/messages/${id}`, { method: 'DELETE', credentials: 'include' });
+                    const res = await r.json();
+                    if (res.success) { document.getElementById(`msg-node-${id}`)?.remove(); renderedMessages.delete(id); }
+                }
+            });
+            deleteBtn.parentNode.replaceChild(newDeleteBtn, deleteBtn);
+
+            const closeOnOutsideClick = (e) => { 
+                if (!menu.contains(e.target)) closeMenu(); 
+            };
+
+            setTimeout(() => {
+                document.addEventListener('click', closeOnOutsideClick);
+                document.addEventListener('touchstart', closeOnOutsideClick, { passive: true });
+            }, 50);
+        }
+
+        document.getElementById('cancelReplyBtn')?.addEventListener('click', () => {
+            replyTargetId = null;
+            document.getElementById('activeReplyBar').style.display = 'none';
+        });
+
+        async function loadMessages() {
+            if (!window.API || !currentUsername) return;
+            const res = await window.API.get('/api/messages'); if (!res.success) return;
+
+            const container = document.getElementById('msgContainer'); if (!container) return;
+            const isBottom = container.scrollHeight - container.clientHeight <= container.scrollTop + 40;
+
+            const visible = res.messages.filter(m => !m.to || m.username === currentUsername || m.to === currentUsername);
+            let unreadIds = [], updated = false;
+
+            visible.forEach(m => {
+                const isMe = m.username === currentUsername;
+                const readCount = (m.readBy || []).length;
+                const isDm = !!m.to;
+                
+                if (!isMe && (!m.readBy || !m.readBy.includes(currentUsername))) unreadIds.push(m.id);
+
+                if (renderedMessages.has(m.id)) {
+                    if (renderedMessages.get(m.id) !== readCount) {
+                        const el = document.getElementById(`read-${m.id}`); 
+                        if (el && isMe) el.innerText = getReadStatusText(readCount, isDm);
+                        renderedMessages.set(m.id, readCount);
+                    }
+                    return;
+                }
+
+                if (isMe && (m.text.trim() === '/request admin' || m.text.trim().startsWith('/admin pass '))) { if (!m.system) return; }
+
+                updated = true;
+                renderedMessages.set(m.id, readCount);
+
+                let dmBadge = '', bubbleClass = 'msg-bubble';
+                if (m.system) bubbleClass = 'msg-bubble system-bubble';
+                else if (m.to) dmBadge = isMe ? `<span style="color:#ef4444; font-weight:bold;">🔒 DM</span>` : `<span style="color:#0ea5e9; font-weight:bold;">🔒 あなた宛のDM</span>`;
+
+                let replyHTML = '';
+                if (m.replyTo && m.replyTo.id) {
+                    const rUser = escapeHtml(m.replyTo.displayName || m.replyTo.username);
+                    const rText = escapeHtml(m.replyTo.text.length > 20 ? m.replyTo.text.substring(0, 20) + '...' : m.replyTo.text);
+                    const rIcon = createIconHTML(m.replyTo.icon, m.replyTo.username);
+                    
+                    replyHTML = `
+                        <div class="reply-preview-box" onclick="scrollToMessage('${m.replyTo.id}')">
+                            <div class="reply-user-row">
+                                ${rIcon}
+                                <span>${rUser}</span>
+                            </div>
+                            <div class="reply-text-row">${rText}</div>
+                        </div>
+                    `;
+                }
+
+                const msgNode = document.createElement('div');
+                msgNode.id = `msg-node-${m.id}`;
+                msgNode.className = `msg-row ${isMe ? 'me' : 'other'}`;
+                msgNode.style.marginBottom = "14px";
+                msgNode.innerHTML = `
+                    <div class="msg-header">${isMe ? `<strong>${m.displayName||m.username}</strong>${createIconHTML(m.icon,m.username)}${dmBadge}` : `${createIconHTML(m.icon,m.username)}<strong>${m.displayName||m.username}</strong>${dmBadge}`}</div>
+                    <div class="msg-content-area">
+                        ${replyHTML}
+                        <div class="${bubbleClass}" id="bubble-${m.id}">
+                            <div>${escapeHtml(m.text)}</div>
+                            ${m.image ? `<img src="${m.image}" class="posted-chat-img" loading="lazy">` : ''}
+                        </div>
+                        <div class="msg-footer">
+                            <span class="read-status" id="read-${m.id}">${isMe ? getReadStatusText(readCount, isDm) : ''}</span>
+                            <span>${m.time || ''}</span>
+                        </div>
+                    </div>`;
+                container.appendChild(msgNode);
+                
+                if (!m.system) setupDoubleClick(document.getElementById(`bubble-${m.id}`), m.id, m.username, m.text, m.icon, m.displayName);
+            });
+
+            if (unreadIds.length > 0) {
+                fetch('/api/messages/read', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messageIds: unreadIds }), credentials: 'include' }).catch(e=>e);
+            }
+            if (updated && isBottom) container.scrollTop = container.scrollHeight;
+        }
+
+        window.initChatCore = async function() {
+            const res = await window.API.get('/api/me');
+            if (res.success) {
+                currentUsername = res.user.username;
+                currentUserRole = res.user.role; // ロール(admin等)をフロント側でも追跡する
+                document.getElementById('userInfo').innerHTML = `${createIconHTML(res.user.icon, res.user.username)} <span>${res.user.displayName}${res.user.role==='admin'?'<span class="admin-badge">ADMIN</span>':''}</span>`;
+                document.getElementById('linkLogin').style.display = 'none';
+                document.getElementById('linkRegister').style.display = 'none';
+                document.getElementById('linkMydata').style.display = 'inline';
+                document.getElementById('chatArea').style.display = 'block';
+                await loadMessages();
+                const c = document.getElementById('msgContainer'); if(c) c.scrollTop = c.scrollHeight;
+                setInterval(loadMessages, 3000);
+            } else {
+                document.getElementById('userInfo').innerText = "ゲストさん";
+                document.getElementById('guestNotice').style.display = 'block';
+            }
+        };
+
+        document.getElementById('msgImage')?.addEventListener('change', (e) => {
+            const file = e.target.files[0]; const p = document.getElementById('previewImg');
+            if (file && p) { const r = new FileReader(); r.onload=(ev)=>{p.src=ev.target.result; p.style.display='block';}; r.readAsDataURL(file); }
+        });
+
+        document.getElementById('chatForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const txt = document.getElementById('msgText'), f = document.getElementById('msgImage');
+            if (!txt.value.trim() && !f.files.length) return;
+            
+            const fd = new FormData(); 
+            fd.append('text', txt.value); 
+            if (f.files.length) fd.append('image', f.files[0]);
+            if (replyTargetId) fd.append('replyToId', replyTargetId);
+
+            const r = await fetch('/api/messages', { method: 'POST', body: fd, credentials: 'include' });
+            const res = await r.json();
+            if (res.success) { 
+                txt.value = ''; f.value = ''; 
+                replyTargetId = null;
+                document.getElementById('activeReplyBar').style.display = 'none';
+                document.getElementById('previewImg').style.display = 'none'; 
+                await loadMessages(); 
+                const c = document.getElementById('msgContainer'); if(c) c.scrollTop = c.scrollHeight; 
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ログイン</title>
+    <link rel="icon" type="image/png" href="/images/favicon.png">
+    <link rel="stylesheet" href="/chat/css/style.css">
+    
+    <script src="/js/chat.js" defer></script>
+</head>
+<body>
+    <div class="container">
+        <h2>LOGIN</h2>
+        <form id="loginForm">
+            <input type="text" id="loginId" placeholder="ユーザー名 または メールアドレスを入力" autocomplete="username" required>
+            <input type="password" id="password" placeholder="パスワード" autocomplete="current-password" required>
+            <button type="submit">ログイン</button>
+        </form>
+        <hr>
+        <p style="text-align: center; font-size: 14px;">
+            <a href="/account/create.html" style="color: var(--accent); text-decoration: none;">アカウントを新規作成する</a>
+        </p>
+        <div class="back-link"><a href="/">← トップへ戻る</a></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('loginForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const loginId = document.getElementById('loginId').value;
+                const password = document.getElementById('password').value;
+
+                // chat.js側で定義された window.API.post を安全に利用して通信
+                if (window.API && typeof window.API.post === 'function') {
+                    // ポート番号のズレを防ぐため、相対パスで同一サーバーの login.js 内エンドポイントを叩きます
+                    const result = await window.API.post('/api/login', { loginId, password });
+                    if (result.success) {
+                        location.href = '/'; // ログイン成功後にトップページへリダイレクト
+                    } else {
+                        alert(result.message || '認証に失敗しました');
+                    }
+                } else {
+                    alert('システムの読み込みに失敗しました。ページを再読み込みしてください。');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

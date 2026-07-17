@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OMS 改善案ポスト</title>
+    <link rel="icon" type="image/png" href="/images/favicon.png">
+    <link rel="stylesheet" href="/chat/css/style.css">
+    <style>
+        .back-btn { display: inline-flex; align-items: center; justify-content: center; padding: 8px 16px; font-size: 14px; color: #475569; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; text-decoration: none; font-weight: bold; transition: background 0.2s; margin-bottom: 20px; cursor: pointer; }
+        .back-btn:hover { background: #e2e8f0; }
+
+        .plan-box { max-width: 500px; margin: 0 auto; background: #ffffff; padding: 25px; border-radius: 16px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
+        .plan-textarea { width: 100%; height: 120px; border: 1px solid #cbd5e1; border-radius: 10px; padding: 12px; font-size: 14px; outline: none; background: #fff; resize: vertical; box-sizing: border-box; margin-bottom: 15px; }
+        .plan-textarea:focus { border-color: #0284c7; box-shadow: 0 0 0 4px rgba(2,132,199,0.1); }
+        .plan-submit-btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; background: #0284c7; color: white; cursor: pointer; transition: background 0.2s; }
+        .plan-submit-btn:hover { background: #0369a1; }
+        
+        .user-indicator { display: flex; align-items: center; gap: 8px; margin-bottom: 15px; font-size: 14px; color: #64748b; background: #f8fafc; padding: 8px 12px; border-radius: 8px; border: 1px solid #f1f5f9; }
+    </style>
+</head>
+<body>
+    <div class="container" style="padding: 20px; box-sizing: border-box; max-width: 550px; margin: 0 auto;">
+        <a href="/" class="back-btn">← ホームに戻る</a>
+
+        <h1 style="text-align: center; margin-bottom: 10px;">改善案ポスト</h1>
+        <p style="text-align: center; color: #64748b; font-size: 14px; margin-bottom: 25px;">OMSの使い勝手向上のため、あなたの改善のアイデアやご要望をお気軽にお寄せください。</p>
+
+        <div id="guest-block" class="notice" style="display: none; text-align: center;">
+            <p>改善案を投稿するには、ログインが必要です。</p>
+            <a href="/account/login.html" class="back-btn" style="margin-top: 10px; display: inline-block;">ログイン画面へ</a>
+        </div>
+
+        <div id="plan-block" class="plan-box" style="display: none;">
+            <div class="user-indicator">
+                <span>👤 投稿者アカウント: </span>
+                <strong id="my-account-name" style="color: #0f172a;">---</strong>
+            </div>
+
+            <textarea id="plan-text" class="plan-textarea" placeholder="例: チャットにリアクションスタンプ機能が欲しいです！ / 数独にやり直しボタンをつけてほしいです。"></textarea>
+            <button id="btn-submit-plan" class="plan-submit-btn">改善案を送信する</button>
+        </div>
+    </div>
+
+    <script>
+        (async function() {
+            // ログイン状態を確認
+            try {
+                const res = await fetch('/api/me');
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('plan-block').style.display = 'block';
+                    document.getElementById('my-account-name').textContent = `@${data.user.username}`;
+                } else {
+                    document.getElementById('guest-block').style.display = 'block';
+                }
+            } catch (e) {
+                console.error(e);
+                document.getElementById('guest-block').style.display = 'block';
+            }
+
+            // 送信処理
+            document.getElementById('btn-submit-plan').addEventListener('click', async () => {
+                const txt = document.getElementById('plan-text').value;
+                if (!txt.trim()) {
+                    alert('ご要望内容を入力してください。');
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/api/action-plan', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ requestText: txt })
+                    });
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        alert(result.message);
+                        document.getElementById('plan-text').value = '';
+                    } else {
+                        alert(result.message || '送信に失敗しました');
+                    }
+                } catch (e) {
+                    alert('送信中にエラーが発生しました');
+                }
+            });
+        })();
+    </script>
+</body>
+</html>

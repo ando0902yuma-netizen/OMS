@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>計算機 | OMS</title>
+    <link rel="stylesheet" href="/chat/css/style.css">
+    <link rel="icon" type="image/x-icon" href="./favicon.png">
+    <style>
+        .back-btn { display: inline-flex; align-items: center; justify-content: center; padding: 8px 16px; font-size: 14px; color: #475569; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; text-decoration: none; font-weight: bold; transition: background 0.2s; margin-bottom: 20px; cursor: pointer; }
+        .back-btn:hover { background: #e2e8f0; }
+        
+        .calculator { max-width: 320px; margin: 0 auto; background: #1e293b; padding: 20px; border-radius: 16px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); }
+        .calc-display { width: 100%; height: 60px; background: #0f172a; border: none; border-radius: 8px; color: #38bdf8; font-size: 28px; text-align: right; padding: 10px; box-sizing: border-box; margin-bottom: 15px; font-family: monospace; outline: none; }
+        .calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .calc-btn { height: 50px; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; transition: background 0.1s; background: #334155; color: #f8fafc; }
+        .calc-btn:active { transform: scale(0.95); }
+        .calc-btn.operator { background: #f97316; color: white; }
+        .calc-btn.operator:hover { background: #ea580c; }
+        .calc-btn.action { background: #64748b; color: white; }
+        .calc-btn.action:hover { background: #475569; }
+        .calc-btn.double { grid-column: span 2; }
+        .calc-btn:hover { background: #475569; }
+    </style>
+</head>
+<body>
+    <div class="container" style="padding: 20px; box-sizing: border-box; max-width: 500px; margin: 0 auto;">
+        <a href="../" class="back-btn">← 戻る</a>
+
+        <h1 style="text-align: center;">OMS 計算機</h1>
+        
+        <div class="calculator">
+            <input type="text" id="calc-screen" class="calc-display" readonly value="0">
+            <div class="calc-grid">
+                <button class="calc-btn action" data-action="clear">C</button>
+                <button class="calc-btn action" data-action="backspace">⌫</button>
+                <button class="calc-btn operator" data-val="%">%</button>
+                <button class="calc-btn operator" data-val="/">÷</button>
+                
+                <button class="calc-btn" data-val="7">7</button>
+                <button class="calc-btn" data-val="8">8</button>
+                <button class="calc-btn" data-val="9">9</button>
+                <button class="calc-btn operator" data-val="*">×</button>
+                
+                <button class="calc-btn" data-val="4">4</button>
+                <button class="calc-btn" data-val="5">5</button>
+                <button class="calc-btn" data-val="6">6</button>
+                <button class="calc-btn operator" data-val="-">-</button>
+                
+                <button class="calc-btn" data-val="1">1</button>
+                <button class="calc-btn" data-val="2">2</button>
+                <button class="calc-btn" data-val="3">3</button>
+                <button class="calc-btn operator" data-val="+">+</button>
+                
+                <button class="calc-btn double" data-val="0">0</button>
+                <button class="calc-btn" data-val=".">.</button>
+                <button class="calc-btn operator" data-action="calculate">=</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const screen = document.getElementById('calc-screen');
+            if (!screen) return;
+
+            let currentInput = '0';
+            let previousInput = '';
+            let operation = null;
+            let shouldResetScreen = false;
+
+            function updateDisplay() {
+                screen.value = currentInput;
+            }
+
+            function appendNumber(number) {
+                if (currentInput === '0' || shouldResetScreen) {
+                    currentInput = number;
+                    shouldResetScreen = false;
+                } else {
+                    if (number === '.' && currentInput.includes('.')) return;
+                    currentInput += number;
+                }
+                updateDisplay();
+            }
+
+            function chooseOperation(op) {
+                if (operation !== null) calculate();
+                previousInput = currentInput;
+                operation = op;
+                shouldResetScreen = true;
+            }
+
+            function calculate() {
+                let computation;
+                const prev = parseFloat(previousInput);
+                const current = parseFloat(currentInput);
+                if (isNaN(prev) || isNaN(current)) return;
+
+                switch (operation) {
+                    case '+':
+                        computation = prev + current;
+                        break;
+                    case '-':
+                        computation = prev - current;
+                        break;
+                    case '*':
+                        computation = prev * current;
+                        break;
+                    case '/':
+                        computation = current === 0 ? 'Error' : prev / current;
+                        break;
+                    case '%':
+                        computation = prev % current;
+                        break;
+                    default:
+                        return;
+                }
+
+                currentInput = computation.toString();
+                operation = null;
+                previousInput = '';
+                shouldResetScreen = true;
+                updateDisplay();
+            }
+
+            function clear() {
+                currentInput = '0';
+                previousInput = '';
+                operation = null;
+                updateDisplay();
+            }
+
+            function backspace() {
+                if (currentInput.length > 1) {
+                    currentInput = currentInput.slice(0, -1);
+                } else {
+                    currentInput = '0';
+                }
+                updateDisplay();
+            }
+
+            document.querySelectorAll('.calc-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    const val = button.getAttribute('data-val');
+                    const action = button.getAttribute('data-action');
+
+                    if (val !== null) {
+                        if (['+', '-', '*', '/', '%'].includes(val)) {
+                            chooseOperation(val);
+                        } else {
+                            appendNumber(val);
+                        }
+                    } else if (action !== null) {
+                        if (action === 'clear') clear();
+                        if (action === 'backspace') backspace();
+                        if (action === 'calculate') calculate();
+                    }
+                });
+            });
+        })();
+    </script>
+</body>
+</html>
